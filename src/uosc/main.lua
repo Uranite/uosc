@@ -51,7 +51,7 @@ defaults = {
 	top_bar = 'no-border',
 	top_bar_size = 40,
 	top_bar_persistency = '',
-	top_bar_controls = true,
+	top_bar_controls = 'right',
 	top_bar_title = 'yes',
 	top_bar_alt_title = '',
 	top_bar_alt_title_place = 'below',
@@ -125,6 +125,9 @@ if options.total_time and options.destination_time == 'playtime-remaining' then
 	options.destination_time = 'total'
 elseif not itable_index_of({'total', 'playtime-remaining', 'time-remaining'}, options.destination_time) then
 	options.destination_time = 'playtime-remaining'
+end
+if not itable_index_of({'left', 'right'}, options.top_bar_controls) then
+	options.top_bar_controls = options.top_bar_controls == 'yes' and 'right' or nil
 end
 -- Ensure required environment configuration
 if options.autoload then mp.commandv('set', 'keep-open-pause', 'no') end
@@ -373,6 +376,7 @@ state = {
 	cache = nil,
 	cache_buffering = 100,
 	cache_underrun = false,
+	cache_duration = nil,
 	core_idle = false,
 	eof_reached = false,
 	render_delay = config.render_delay,
@@ -766,6 +770,7 @@ mp.observe_property('demuxer-cache-state', 'native', function(prop, cache_state)
 	if cache_state then
 		cached_ranges, bof, eof = cache_state['seekable-ranges'], cache_state['bof-cached'], cache_state['eof-cached']
 		set_state('cache_underrun', cache_state['underrun'])
+		set_state('cache_duration', not cache_state.eof and cache_state['cache-duration'] or nil)
 	else
 		cached_ranges = {}
 	end
@@ -773,6 +778,7 @@ mp.observe_property('demuxer-cache-state', 'native', function(prop, cache_state)
 	if not (state.duration and (#cached_ranges > 0 or state.cache == 'yes' or
 			(state.cache == 'auto' and state.is_stream))) then
 		if state.uncached_ranges then set_state('uncached_ranges', nil) end
+		set_state('cache_duration', nil)
 		return
 	end
 
